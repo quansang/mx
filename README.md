@@ -16,6 +16,14 @@ A fast, lightweight markdown editor for the AI era. Built with Tauri 2 + Rust.
 
 > All downloads on the [Releases](https://github.com/vibery-studio/mx/releases) page.
 
+### macOS: "mx is damaged and can't be opened"
+
+macOS Gatekeeper blocks unsigned apps. After installing, run:
+
+```bash
+xattr -cr /Applications/mx.app
+```
+
 ## Why mx?
 
 Working with AI means opening dozens of markdown files every day. You need a fast editor that just works — not a vault-based system like Obsidian, not an abandoned app like MacDown. mx opens any `.md` file instantly with live preview. No vault. No config. Just open and go.

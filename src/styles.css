@@ -101,34 +101,64 @@ body {
   background: var(--muted);
 }
 
-#help-menu-wrapper {
+.toolbar-dropdown {
   position: relative;
 }
 
-#help-menu {
+.dropdown-menu {
   position: absolute;
   top: 100%;
-  right: 0;
+  left: 0;
   margin-top: 4px;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 4px 0;
-  min-width: 180px;
+  min-width: 200px;
   z-index: 100;
   box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
-.help-menu-item {
+.dropdown-item {
   padding: 6px 14px;
   font-size: 12px;
   color: var(--text);
   cursor: pointer;
   font-family: var(--font-ui);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.help-menu-item:hover {
+.dropdown-item:hover {
   background: var(--border);
+}
+
+.dropdown-item .shortcut {
+  color: var(--muted);
+  font-size: 11px;
+  margin-left: 16px;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
+.toolbar-sep {
+  width: 1px;
+  height: 18px;
+  background: var(--border);
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.toolbar-zoom {
+  font-size: 11px;
+  color: var(--muted);
+  min-width: 36px;
+  text-align: center;
 }
 
 #token-info {
@@ -642,12 +672,7 @@ body {
   font-size: 12px;
 }
 
-/* ── Zoom indicator ── */
-
-#status-zoom {
-  color: var(--muted);
-  font-size: 11px;
-}
+/* ── Zoom indicator (in toolbar) ── */
 
 /* ── Print ── */
 

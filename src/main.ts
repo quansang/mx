@@ -816,36 +816,46 @@ window.addEventListener("DOMContentLoaded", () => {
     parent: editorPane,
   });
 
-  // Toolbar buttons
-  document.getElementById("btn-open")?.addEventListener("click", openFileDialog);
-  document.getElementById("btn-save")?.addEventListener("click", saveFile);
-  document.getElementById("btn-toggle-preview")?.addEventListener("click", togglePreview);
+  // Dropdown menus
+  document.querySelectorAll(".toolbar-dropdown").forEach(wrapper => {
+    const btn = wrapper.querySelector("button");
+    const menu = wrapper.querySelector(".dropdown-menu");
+    if (!btn || !menu) return;
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      // Close other dropdowns
+      document.querySelectorAll(".dropdown-menu").forEach(m => {
+        if (m !== menu) m.classList.add("hidden");
+      });
+      menu.classList.toggle("hidden");
+    });
+  });
+  document.addEventListener("click", () => {
+    document.querySelectorAll(".dropdown-menu").forEach(m => m.classList.add("hidden"));
+  });
 
-  // Sidebar buttons
-  document.getElementById("btn-read-mode")?.addEventListener("click", toggleReadMode);
-  document.getElementById("btn-copy-html")?.addEventListener("click", copyFormattedHTML);
-  document.getElementById("btn-export-pdf")?.addEventListener("click", exportPDF);
-  document.getElementById("btn-toggle-sidebar")?.addEventListener("click", toggleSidebar);
+  // File menu items
+  document.getElementById("btn-open")?.addEventListener("click", () => openFileDialog());
   document.getElementById("btn-open-folder")?.addEventListener("click", () => openFolder());
-  document.getElementById("btn-recent")?.addEventListener("click", toggleRecentPanel);
-  document.getElementById("btn-zoom-in")?.addEventListener("click", zoomIn);
-  document.getElementById("btn-zoom-out")?.addEventListener("click", zoomOut);
+  document.getElementById("btn-recent")?.addEventListener("click", () => toggleRecentPanel());
+  document.getElementById("btn-save")?.addEventListener("click", () => saveFile());
+  document.getElementById("btn-export-pdf")?.addEventListener("click", () => exportPDF());
 
-  // Help menu
-  const helpMenu = document.getElementById("help-menu");
-  document.getElementById("btn-help")?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    helpMenu?.classList.toggle("hidden");
-  });
-  document.addEventListener("click", () => helpMenu?.classList.add("hidden"));
-  document.getElementById("btn-check-updates")?.addEventListener("click", () => {
-    helpMenu?.classList.add("hidden");
-    doUpdateCheck(true);
-  });
+  // View menu items
+  document.getElementById("btn-toggle-sidebar")?.addEventListener("click", () => toggleSidebar());
+  document.getElementById("btn-toggle-preview")?.addEventListener("click", () => togglePreview());
+  document.getElementById("btn-read-mode")?.addEventListener("click", () => toggleReadMode());
+
+  // Help menu items
+  document.getElementById("btn-check-updates")?.addEventListener("click", () => doUpdateCheck(true));
   document.getElementById("btn-about")?.addEventListener("click", () => {
-    helpMenu?.classList.add("hidden");
     invoke("plugin:opener|open_url", { url: "https://github.com/vibery-studio/mx" });
   });
+
+  // Primary toolbar buttons
+  document.getElementById("btn-copy-html")?.addEventListener("click", copyFormattedHTML);
+  document.getElementById("btn-zoom-in")?.addEventListener("click", zoomIn);
+  document.getElementById("btn-zoom-out")?.addEventListener("click", zoomOut);
 
   // Divider drag
   initDividerDrag();
