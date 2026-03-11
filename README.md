@@ -44,8 +44,19 @@ Working with AI means opening dozens of markdown files every day. You need a fas
 - **File sidebar** — browse directories with emoji icons
 - **Drag & drop** — drop any .md, .yaml, .json, .txt file to open
 - **PDF export** — via Pandoc with Mermaid diagram support
+- **Copy formatted** — copy preview as rich HTML for Substack, WordPress, Notion
 - **Resizable split** — drag divider between editor and preview
-- **Keyboard-first** — `Cmd+O` open, `Cmd+S` save, `Cmd+P` preview, `Cmd+E` read mode
+
+## Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Cmd+O` | Open file |
+| `Cmd+S` | Save file |
+| `Cmd+P` | Toggle preview |
+| `Cmd+E` | Read mode (preview only) |
+| `Cmd+B` | Toggle file sidebar |
+| `Cmd+Shift+C` | Copy formatted HTML |
 
 ## Development
 
