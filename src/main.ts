@@ -1,5 +1,5 @@
 import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter, ViewUpdate } from "@codemirror/view";
-import { EditorState } from "@codemirror/state";
+import { EditorState, Compartment } from "@codemirror/state";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 import { oneDark } from "@codemirror/theme-one-dark";
@@ -83,6 +83,60 @@ function zoomIn() { zoomLevel = Math.min(200, zoomLevel + 10); applyZoom(); }
 function zoomOut() { zoomLevel = Math.max(50, zoomLevel - 10); applyZoom(); }
 function zoomReset() { zoomLevel = 100; applyZoom(); }
 
+// --- Theme ---
+
+type ThemeMode = "auto" | "light" | "dark";
+let currentThemeMode: ThemeMode = (localStorage.getItem("mx-theme") as ThemeMode) || "auto";
+const themeCompartment = new Compartment();
+
+function getEffectiveTheme(): "light" | "dark" {
+  if (currentThemeMode === "auto") {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
+  return currentThemeMode;
+}
+
+function applyTheme() {
+  document.documentElement.setAttribute("data-theme", currentThemeMode);
+  localStorage.setItem("mx-theme", currentThemeMode);
+
+  // Update CodeMirror theme
+  if (editor) {
+    const isDark = getEffectiveTheme() === "dark";
+    editor.dispatch({
+      effects: themeCompartment.reconfigure(isDark ? oneDark : editorLightTheme),
+    });
+  }
+
+  // Update mermaid theme
+  mermaid.initialize({ startOnLoad: false, theme: getEffectiveTheme() === "dark" ? "dark" : "default" });
+
+  // Re-render preview to update mermaid diagrams
+  if (editor) {
+    mermaidCounter = 0;
+    updatePreview(editor.state.doc.toString());
+  }
+
+  // Update theme menu label
+  const label = document.getElementById("btn-theme-label");
+  if (label) {
+    const labels: Record<ThemeMode, string> = { auto: "System", light: "Light", dark: "Dark" };
+    label.textContent = `Theme: ${labels[currentThemeMode]}`;
+  }
+}
+
+function cycleTheme() {
+  const order: ThemeMode[] = ["auto", "light", "dark"];
+  const idx = order.indexOf(currentThemeMode);
+  currentThemeMode = order[(idx + 1) % order.length];
+  applyTheme();
+}
+
+// Listen for system theme changes when in auto mode
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+  if (currentThemeMode === "auto") applyTheme();
+});
+
 // --- DOM refs ---
 
 const $ = (sel: string) => document.querySelector(sel) as HTMLElement;
@@ -109,7 +163,7 @@ function renderKaTeX(html: string): string {
 
 // --- Mermaid ---
 
-mermaid.initialize({ startOnLoad: false, theme: "dark" });
+mermaid.initialize({ startOnLoad: false, theme: getEffectiveTheme() === "dark" ? "dark" : "default" });
 
 let mermaidCounter = 0;
 
@@ -436,6 +490,28 @@ const editorFillTheme = EditorView.theme({
   ".cm-scroller": { overflow: "auto" },
 });
 
+const editorLightTheme = EditorView.theme({
+  "&": { backgroundColor: "var(--bg)" },
+  ".cm-gutters": {
+    backgroundColor: "var(--surface)",
+    borderRight: "1px solid var(--border)",
+    color: "var(--muted)",
+  },
+  ".cm-activeLineGutter, .cm-activeLine": {
+    backgroundColor: "var(--hover-bg)",
+  },
+  ".cm-cursor": {
+    borderLeftColor: "var(--text)",
+  },
+  "&.cm-focused .cm-selectionBackground, ::selection": {
+    backgroundColor: "var(--active-bg)",
+  },
+  ".cm-content": {
+    color: "var(--text)",
+    caretColor: "var(--text)",
+  },
+});
+
 // --- Sample content ---
 
 const SAMPLE_CONTENT = `# About mx
@@ -523,7 +599,7 @@ async function copyFormattedHTML() {
     const prevText = statusWords?.textContent || "";
     if (statusWords) {
       statusWords.textContent = "Copied!";
-      statusWords.style.color = "#a6e3a1";
+      statusWords.style.color = "var(--success)";
       setTimeout(() => {
         statusWords.textContent = prevText;
         statusWords.style.color = "";
@@ -554,7 +630,7 @@ async function exportPDF() {
   const prevText = statusWords?.textContent || "";
   if (statusWords) {
     statusWords.textContent = "Exporting PDF...";
-    statusWords.style.color = "#89b4fa";
+    statusWords.style.color = "var(--accent)";
   }
 
   try {
@@ -564,7 +640,7 @@ async function exportPDF() {
     });
     if (statusWords) {
       statusWords.textContent = `PDF saved: ${result.split("/").pop()}`;
-      statusWords.style.color = "#a6e3a1";
+      statusWords.style.color = "var(--success)";
       setTimeout(() => {
         statusWords.textContent = prevText;
         statusWords.style.color = "";
@@ -574,7 +650,7 @@ async function exportPDF() {
     console.error("Pandoc export failed:", e);
     if (statusWords) {
       statusWords.textContent = `PDF failed: ${e}`;
-      statusWords.style.color = "#f38ba8";
+      statusWords.style.color = "var(--error)";
       setTimeout(() => {
         statusWords.textContent = prevText;
         statusWords.style.color = "";
@@ -715,14 +791,14 @@ async function doUpdateCheck(manual: boolean) {
   try {
     if (manual && statusWords) {
       statusWords.textContent = "Checking for updates...";
-      statusWords.style.color = "#89b4fa";
+      statusWords.style.color = "var(--accent)";
     }
 
     const update = await check();
     if (!update) {
       if (manual && statusWords) {
         statusWords.textContent = "You're on the latest version";
-        statusWords.style.color = "#a6e3a1";
+        statusWords.style.color = "var(--success)";
         setTimeout(() => { statusWords.textContent = ""; statusWords.style.color = ""; }, 3000);
       }
       return;
@@ -730,7 +806,7 @@ async function doUpdateCheck(manual: boolean) {
 
     if (statusWords) {
       statusWords.textContent = `Update ${update.version} available — downloading...`;
-      statusWords.style.color = "#89b4fa";
+      statusWords.style.color = "var(--accent)";
     }
 
     let totalSize = 0;
@@ -749,7 +825,7 @@ async function doUpdateCheck(manual: boolean) {
 
     if (statusWords) {
       statusWords.textContent = "Update installed — click to restart";
-      statusWords.style.color = "#a6e3a1";
+      statusWords.style.color = "var(--success)";
       statusWords.style.cursor = "pointer";
       statusWords.addEventListener("click", () => relaunch(), { once: true });
     }
@@ -757,7 +833,7 @@ async function doUpdateCheck(manual: boolean) {
     console.error("Update check failed:", e);
     if (manual && statusWords) {
       statusWords.textContent = "Update check failed";
-      statusWords.style.color = "#f38ba8";
+      statusWords.style.color = "var(--error)";
       setTimeout(() => { statusWords.textContent = ""; statusWords.style.color = ""; }, 3000);
     }
   }
@@ -777,6 +853,9 @@ window.addEventListener("DOMContentLoaded", () => {
   const editorPane = $("#editor-pane");
   if (!editorPane) return;
 
+  // Apply theme before creating editor
+  document.documentElement.setAttribute("data-theme", currentThemeMode);
+
   editor = new EditorView({
     state: EditorState.create({
       doc: SAMPLE_CONTENT,
@@ -789,7 +868,7 @@ window.addEventListener("DOMContentLoaded", () => {
         closeBrackets(),
         syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
         markdown({ base: markdownLanguage, codeLanguages: languages }),
-        oneDark,
+        themeCompartment.of(getEffectiveTheme() === "dark" ? oneDark : editorLightTheme),
         editorFillTheme,
         keymap.of([
           ...defaultKeymap,
@@ -846,6 +925,9 @@ window.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btn-toggle-preview")?.addEventListener("click", () => togglePreview());
   document.getElementById("btn-read-mode")?.addEventListener("click", () => toggleReadMode());
 
+  // Theme
+  document.getElementById("btn-theme")?.addEventListener("click", () => cycleTheme());
+
   // Help menu items
   document.getElementById("btn-check-updates")?.addEventListener("click", () => doUpdateCheck(true));
   document.getElementById("btn-about")?.addEventListener("click", () => {
@@ -883,6 +965,13 @@ window.addEventListener("DOMContentLoaded", () => {
   updateCursorPosition(editor);
   updatePreview(SAMPLE_CONTENT);
   updateWordCount(SAMPLE_CONTENT);
+
+  // Update theme label
+  const themeLabel = document.getElementById("btn-theme-label");
+  if (themeLabel) {
+    const labels: Record<ThemeMode, string> = { auto: "System", light: "Light", dark: "Dark" };
+    themeLabel.textContent = `Theme: ${labels[currentThemeMode]}`;
+  }
 
   // Check for updates after 3s so it doesn't block startup
   setTimeout(checkForUpdates, 3000);
