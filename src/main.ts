@@ -17,7 +17,6 @@ import { open, save } from "@tauri-apps/plugin-dialog";
 // --- State ---
 
 let currentFilePath: string | null = null;
-let isModified = false;
 let editor: EditorView;
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -114,7 +113,6 @@ function updateCursorPosition(view: EditorView) {
 // --- Modified state ---
 
 function setModified(value: boolean) {
-  isModified = value;
   const indicator = document.getElementById("modified-indicator");
   if (indicator) indicator.classList.toggle("hidden", !value);
 }
