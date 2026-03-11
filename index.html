@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="/src/styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>mx</title>
+    <script type="module" src="/src/main.ts" defer></script>
+  </head>
+  <body>
+    <div id="app">
+      <div id="toolbar">
+        <div id="file-info">
+          <span id="filename">No file open</span>
+          <span id="modified-indicator" class="hidden">●</span>
+        </div>
+        <div id="toolbar-actions">
+          <button id="btn-toggle-sidebar" title="Toggle sidebar (Cmd+B)">Files</button>
+          <button id="btn-open-folder" title="Open folder">Folder</button>
+          <button id="btn-open" title="Open file (Cmd+O)">Open</button>
+          <button id="btn-save" title="Save (Cmd+S)">Save</button>
+          <button id="btn-toggle-preview" title="Toggle preview (Cmd+P)">Preview</button>
+          <button id="btn-read-mode" title="Read mode (Cmd+E)">Read</button>
+          <button id="btn-export-pdf" title="Export PDF">PDF</button>
+        </div>
+        <div id="token-info">
+          <span id="token-count">0 words</span>
+          <span id="cost-estimate" class="dim">0 lines</span>
+        </div>
+      </div>
+      <div id="editor-container">
+        <div id="sidebar" class="hidden">
+          <div id="sidebar-header">
+            <span id="sidebar-title">Files</span>
+          </div>
+          <div id="sidebar-tree"></div>
+        </div>
+        <div id="editor-pane"></div>
+        <div id="divider"></div>
+        <div id="preview-pane"></div>
+      </div>
+      <div id="statusbar">
+        <span id="status-position">Ln 1, Col 1</span>
+        <span id="status-words">0 words</span>
+        <span id="status-tokens">0 chars</span>
+      </div>
+    </div>
+  </body>
+</html>
