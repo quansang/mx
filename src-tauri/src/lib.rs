@@ -243,18 +243,17 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![read_file, save_file, word_count, list_directory, get_home_dir, get_initial_file, export_pdf])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
-        .run(|app, event| {
-            if let tauri::RunEvent::Opened { urls } = event {
+        .run(|_app, _event| {
+            #[cfg(any(target_os = "macos", target_os = "ios"))]
+            if let tauri::RunEvent::Opened { urls } = _event {
                 let files: Vec<String> = urls
                     .into_iter()
                     .filter_map(|url| url.to_file_path().ok())
                     .map(|p| p.to_string_lossy().to_string())
                     .collect();
                 if let Some(path) = files.first() {
-                    // Store for cold start (frontend not ready yet)
                     *INITIAL_FILE.lock().unwrap() = Some(path.clone());
-                    // Emit for warm start (frontend already listening)
-                    let _ = app.emit("open-file", path.clone());
+                    let _ = _app.emit("open-file", path.clone());
                 }
             }
         });
