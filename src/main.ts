@@ -317,6 +317,23 @@ function openMermaidOverlay(source: HTMLElement) {
   overlay.appendChild(wrapper);
   document.body.appendChild(overlay);
 
+  // Size wrapper to SVG's natural dimensions and center via panzoom
+  const vb = newSvg.getAttribute("viewBox")?.split(/\s+/).map(Number);
+  const svgW = vb ? vb[2] : svg.getBBox().width;
+  const svgH = vb ? vb[3] : svg.getBBox().height;
+  wrapper.style.width = svgW + "px";
+  wrapper.style.height = svgH + "px";
+  newSvg.style.width = "100%";
+  newSvg.style.height = "100%";
+
+  // Fit diagram to screen with padding, then center
+  const pad = 60;
+  const scaleX = (window.innerWidth - pad * 2) / svgW;
+  const scaleY = (window.innerHeight - pad * 2) / svgH;
+  const fitScale = Math.min(scaleX, scaleY, 1); // don't upscale past 1
+  const cx = (window.innerWidth - svgW * fitScale) / 2;
+  const cy = (window.innerHeight - svgH * fitScale) / 2;
+
   const pz = panzoom(wrapper, {
     smoothScroll: true,
     minZoom: 0.1,
@@ -324,6 +341,9 @@ function openMermaidOverlay(source: HTMLElement) {
     pinchSpeed: 1.5,
     zoomDoubleClickSpeed: 2,
   });
+
+  pz.zoomAbs(0, 0, fitScale);
+  pz.moveTo(cx, cy);
 
   function close() {
     pz.dispose();
