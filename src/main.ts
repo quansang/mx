@@ -10,6 +10,8 @@ import { search, searchKeymap } from "@codemirror/search";
 import MarkdownIt from "markdown-it";
 import footnote from "markdown-it-footnote";
 import mermaid from "mermaid";
+import panzoom from "panzoom";
+import type { PanZoom } from "panzoom";
 import katex from "katex";
 import "katex/dist/katex.min.css";
 import { invoke } from "@tauri-apps/api/core";
@@ -228,6 +230,7 @@ function renderKaTeX(html: string): string {
 mermaid.initialize({ startOnLoad: false, theme: getEffectiveTheme() === "dark" ? "dark" : "default" });
 
 let mermaidCounter = 0;
+let mermaidPanZoomInstances: PanZoom[] = [];
 
 function processMermaidBlocks(html: string): string {
   return html.replace(
@@ -241,11 +244,99 @@ function processMermaidBlocks(html: string): string {
 }
 
 async function renderMermaidDivs() {
+  // Dispose old panzoom instances
+  mermaidPanZoomInstances.forEach((pz) => pz.dispose());
+  mermaidPanZoomInstances = [];
+
   const divs = document.querySelectorAll("#preview-pane .mermaid");
   if (divs.length === 0) return;
   try {
     await mermaid.run({ nodes: divs as unknown as ArrayLike<HTMLElement> });
   } catch { /* mermaid render errors are non-fatal */ }
+  // Add click-to-open-fullscreen on each mermaid diagram
+  divs.forEach((div) => {
+    const el = div as HTMLElement;
+    if (el.dataset.zoomReady) return;
+    el.dataset.zoomReady = "1";
+    el.style.cursor = "pointer";
+
+    el.addEventListener("click", () => openMermaidOverlay(el));
+  });
+}
+
+function openMermaidOverlay(source: HTMLElement) {
+  const svg = source.querySelector("svg");
+  if (!svg) return;
+
+  // Clone via outerHTML to preserve all attributes, styles, defs
+  const tmpDiv = document.createElement("div");
+  tmpDiv.innerHTML = svg.outerHTML;
+  const newSvg = tmpDiv.querySelector("svg")!;
+
+  // Ensure it has a viewBox so it scales properly
+  if (!newSvg.getAttribute("viewBox")) {
+    const bbox = svg.getBBox();
+    newSvg.setAttribute("viewBox", `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`);
+  }
+
+  // Also grab any <style> from the original SVG's shadow/parent that mermaid may inject
+  // Mermaid puts styles INSIDE the SVG so outerHTML should have them
+
+  // Inline all computed styles on every element to survive detachment
+  const origEls = svg.querySelectorAll("*");
+  const newEls = newSvg.querySelectorAll("*");
+  const styleProps = ["fill", "stroke", "stroke-width", "opacity", "font-family", "font-size", "font-weight", "color", "background-color", "rx", "ry"];
+  origEls.forEach((origEl, i) => {
+    const newEl = newEls[i] as SVGElement | HTMLElement;
+    if (!newEl || !newEl.style) return;
+    const cs = window.getComputedStyle(origEl);
+    for (const prop of styleProps) {
+      const val = cs.getPropertyValue(prop);
+      if (val) newEl.style.setProperty(prop, val);
+    }
+  });
+
+  newSvg.removeAttribute("width");
+  newSvg.removeAttribute("height");
+  newSvg.style.width = "100%";
+  newSvg.style.height = "100%";
+
+  // Create overlay
+  const overlay = document.createElement("div");
+  overlay.className = "mermaid-zoom-overlay";
+
+  const closeBtn = document.createElement("button");
+  closeBtn.className = "mermaid-zoom-close";
+  closeBtn.innerHTML = "✕";
+  closeBtn.title = "Close (Esc)";
+  overlay.appendChild(closeBtn);
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "mermaid-zoom-wrapper";
+  wrapper.appendChild(newSvg);
+  overlay.appendChild(wrapper);
+  document.body.appendChild(overlay);
+
+  const pz = panzoom(wrapper, {
+    smoothScroll: true,
+    minZoom: 0.1,
+    maxZoom: 10,
+    pinchSpeed: 1.5,
+    zoomDoubleClickSpeed: 2,
+  });
+
+  function close() {
+    pz.dispose();
+    overlay.remove();
+  }
+
+  closeBtn.addEventListener("click", close);
+  const escHandler = (ev: KeyboardEvent) => {
+    if (ev.key === "Escape") { close(); document.removeEventListener("keydown", escHandler); }
+  };
+  document.addEventListener("keydown", escHandler);
+  overlay.tabIndex = 0;
+  overlay.focus();
 }
 
 // --- YAML Frontmatter ---
