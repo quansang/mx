@@ -955,6 +955,35 @@ window.addEventListener("DOMContentLoaded", () => {
     if (path) openFile(path);
   });
 
+  // Preview pane link clicks — open relative .md files, external links in browser
+  $("#preview-pane")?.addEventListener("click", (e) => {
+    const anchor = (e.target as HTMLElement).closest("a");
+    if (!anchor) return;
+    e.preventDefault();
+    const href = anchor.getAttribute("href");
+    if (!href) return;
+
+    // External URL — open in system browser
+    if (/^https?:\/\//.test(href)) {
+      invoke("plugin:opener|open_url", { url: href });
+      return;
+    }
+
+    // Anchor link — scroll within preview
+    if (href.startsWith("#")) return;
+
+    // Relative path — resolve against current file's directory
+    const textExts = [".md", ".markdown", ".txt", ".yaml", ".yml", ".json", ".toml", ".xml", ".csv", ".log"];
+    const ext = href.includes(".") ? "." + href.split(".").pop()!.toLowerCase() : "";
+    if (!textExts.includes(ext)) return;
+
+    if (currentFilePath) {
+      const dir = currentFilePath.substring(0, currentFilePath.lastIndexOf("/"));
+      const resolved = dir + "/" + href;
+      openFile(resolved);
+    }
+  });
+
   // GitHub link — open in system browser
   document.getElementById("status-github")?.addEventListener("click", (e) => {
     e.preventDefault();
